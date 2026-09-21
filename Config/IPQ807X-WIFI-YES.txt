@@ -1,22 +1,37 @@
-#设备平台
+# ============================================================
+# 目标平台：Qualcomm IPQ807x
+# ============================================================
 CONFIG_TARGET_qualcommax=y
 CONFIG_TARGET_qualcommax_ipq807x=y
-#设备列表
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_aliyun_ap8220=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_arista_ap-c260=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_arista_ap-c360=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_dynalink_dl-wrx36=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_linksys_homewrk=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_linksys_mx4200v1=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_linksys_mx4200v2=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_linksys_mx4300=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_linksys_mx5300=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_linksys_mx8500=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_qnap_301w=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_redmi_ax6=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_redmi_ax6-stock=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_verizon_cr1000a=y
+
+# ============================================================
+# 设备列表：仅保留小米 AX3600（删除其他所有设备）
+# ============================================================
+# 注意：默认使用大分区布局，不要同时勾选 -stock 版本
 CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_xiaomi_ax3600=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_xiaomi_ax3600-stock=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_xiaomi_ax9000=y
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_xiaomi_ax9000-stock=y
+
+# ============================================================
+# NSS 硬件加速固件与驱动（VIKINGYFY main 分支已内置，
+# 以下为参考项，通常无需手动添加）
+# ============================================================
+# CONFIG_PACKAGE_nss-eip-firmware=y
+# CONFIG_PACKAGE_nss-firmware-ipq8074=y
+# CONFIG_PACKAGE_kmod-qca-nss-dp=y
+# CONFIG_PACKAGE_kmod-qca-nss-drv=y
+# CONFIG_PACKAGE_kmod-qca-nss-ecm=y
+
+# ============================================================
+# 常用 LuCI 插件（按需启用，取消注释即可）
+# ============================================================
+# 科学上网工具（二选一，不要同时开启）
+# CONFIG_PACKAGE_luci-app-openclash=y
+# CONFIG_PACKAGE_luci-app-homeproxy=y
+
+# DNS 优化
+# CONFIG_PACKAGE_luci-app-smartdns=y
+
+# 网络工具
+# CONFIG_PACKAGE_luci-app-upnp=y
+
+# 网络存储
+# CONFIG_PACKAGE_luci-app-samba4=y
