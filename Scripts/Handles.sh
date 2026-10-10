@@ -43,3 +43,44 @@ FIX "natmapt" "$PACKAGE_PATH/luci-app-natmapt" sed -i "s/network/services/g" \
 #修复Rust编译失败
 FIX "rust" "$FEEDS_PATH/packages/lang/rust" sed -i 's/ci-llvm=true/ci-llvm=false/g' \
 	"$FEEDS_PATH/packages/lang/rust/Makefile"
+
+# ===================== AX3600 双设备配置 =====================
+# 清空默认设备列表，只保留ax3600两个profile
+target_device_del_all
+target_device_add "xiaomi_ax3600"
+target_device_add "xiaomi_ax3600-stock"
+
+# ===================== ath11k-nss补丁注入 =====================
+set -e
+echo "====== [Handles.sh] 开始注入ath11k-nss补丁集 ======"
+
+# 补丁放在你CI仓库的 patches/ath11k-nss/ 目录
+PATCH_RAW_PREFIX="https://raw.githubusercontent.com/mahaprajna/OpenWRT-CI-VIKINGYFY/main/patches/ath11k-nss"
+PATCH_LIST=(
+"0001-ath11k-add-nss-support.patch"
+"0002-ath11k-nss-disable-mesh-path.patch"
+)
+
+MAC80211_PATCH_DIR="./package/kernel/mac80211/patches/ath11k"
+mkdir -p "${MAC80211_PATCH_DIR}"
+
+for p in "${PATCH_LIST[@]}";do
+    echo "下载补丁: ${p}"
+    curl -fsSL "${PATCH_RAW_PREFIX}/${p}" -o "${MAC80211_PATCH_DIR}/${p}"
+done
+
+# 应用补丁到immortalwrt源码根目录
+for p in "${PATCH_LIST[@]}";do
+    echo "应用补丁 ${MAC80211_PATCH_DIR}/${p}"
+    patch -p1 --no-backup-if-mismatch < "${MAC80211_PATCH_DIR}/${p}"
+done
+echo "====== [Handles.sh] ath11k-nss补丁注入完成 ======"
+
+# ===================== AX3600大分区DTS补丁注入 =====================
+echo "====== [Handles.sh] 应用AX3600大分区DTS补丁 ======"
+DTS_PATCH_RAW="https://raw.githubusercontent.com/mahaprajna/OpenWRT-CI-VIKINGYFY/main/patches/target/qualcommax/ipq807x/0001-xiaomi-ax3600-big-partition.patch"
+DTS_TMP="./0001-xiaomi-ax3600-big-partition.patch"
+curl -fsSL "${DTS_PATCH_RAW}" -o "${DTS_TMP}"
+patch -p1 --no-backup-if-mismatch < "${DTS_TMP}"
+echo "====== [Handles.sh] DTS大分区补丁完成 ======"
+
