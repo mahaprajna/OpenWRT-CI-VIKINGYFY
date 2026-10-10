@@ -51,36 +51,54 @@ target_device_add "xiaomi_ax3600"
 target_device_add "xiaomi_ax3600-stock"
 
 # ===================== ath11k-nss补丁注入 =====================
-set -e
 echo "====== [Handles.sh] 开始注入ath11k-nss补丁集 ======"
+# OPENWRT_PATH 为CI框架内置变量，指向immortalwrt源码目录
+if [ -z "${OPENWRT_PATH}" ] || [ ! -d "${OPENWRT_PATH}" ];then
+    echo "ERROR: OPENWRT_PATH 无效，跳过所有补丁注入！"
+else
+    PATCH_RAW_PREFIX="https://raw.githubusercontent.com/mahaprajna/OpenWRT-CI-VIKINGYFY/main/patches/ath11k-nss"
+    PATCH_LIST=(
+    "0001-ath11k-add-nss-support.patch"
+    "0002-ath11k-nss-disable-mesh-path.patch"
+    )
 
-# 补丁放在你CI仓库的 patches/ath11k-nss/ 目录
-PATCH_RAW_PREFIX="https://raw.githubusercontent.com/mahaprajna/OpenWRT-CI-VIKINGYFY/main/patches/ath11k-nss"
-PATCH_LIST=(
-"0001-ath11k-add-nss-support.patch"
-"0002-ath11k-nss-disable-mesh-path.patch"
-)
+    MAC80211_PATCH_DIR="${OPENWRT_PATH}/package/kernel/mac80211/patches/ath11k"
+    mkdir -p "${MAC80211_PATCH_DIR}"
 
-MAC80211_PATCH_DIR="./package/kernel/mac80211/patches/ath11k"
-mkdir -p "${MAC80211_PATCH_DIR}"
+    for p in "${PATCH_LIST[@]}";do
+        echo "下载补丁: ${p}"
+        if ! curl -fsSL "${PATCH_RAW_PREFIX}/${p}" -o "${MAC80211_PATCH_DIR}/${p}";then
+            echo "WARN: ${p} 下载失败，跳过此补丁"
+        fi
+    done
 
-for p in "${PATCH_LIST[@]}";do
-    echo "下载补丁: ${p}"
-    curl -fsSL "${PATCH_RAW_PREFIX}/${p}" -o "${MAC80211_PATCH_DIR}/${p}"
-done
+    # 进入源码目录打补丁
+    pushd "${OPENWRT_PATH}" >/dev/null
+    for p in "${PATCH_LIST[@]}";do
+        P_FPATH="${MAC80211_PATCH_DIR}/${p}"
+        if [ -f "${P_FPATH}" ];then
+            echo "应用补丁 ${p}"
+            if ! patch -p1 --no-backup-if-mismatch < "${P_FPATH}";then
+                echo "WARN: ${p} 打补丁失败(hunk冲突)，继续运行"
+            fi
+        fi
+    done
+    popd >/dev/null
+    echo "====== [Handles.sh] ath11k-nss补丁注入完成 ======"
 
-# 应用补丁到immortalwrt源码根目录
-for p in "${PATCH_LIST[@]}";do
-    echo "应用补丁 ${MAC80211_PATCH_DIR}/${p}"
-    patch -p1 --no-backup-if-mismatch < "${MAC80211_PATCH_DIR}/${p}"
-done
-echo "====== [Handles.sh] ath11k-nss补丁注入完成 ======"
+    # ===================== AX3600大分区DTS补丁注入 =====================
+    echo "====== [Handles.sh] 应用AX3600大分区DTS补丁 ======"
+    DTS_PATCH_RAW="https://raw.githubusercontent.com/mahaprajna/OpenWRT-CI-VIKINGYFY/main/patches/target/qualcommax/ipq807x/0001-xiaomi-ax3600-big-partition.patch"
+    DTS_TMP="${OPENWRT_PATH}/0001-xiaomi-ax3600-big-partition.patch"
 
-# ===================== AX3600大分区DTS补丁注入 =====================
-echo "====== [Handles.sh] 应用AX3600大分区DTS补丁 ======"
-DTS_PATCH_RAW="https://raw.githubusercontent.com/mahaprajna/OpenWRT-CI-VIKINGYFY/main/patches/target/qualcommax/ipq807x/0001-xiaomi-ax3600-big-partition.patch"
-DTS_TMP="./0001-xiaomi-ax3600-big-partition.patch"
-curl -fsSL "${DTS_PATCH_RAW}" -o "${DTS_TMP}"
-patch -p1 --no-backup-if-mismatch < "${DTS_TMP}"
-echo "====== [Handles.sh] DTS大分区补丁完成 ======"
-
+    if curl -fsSL "${DTS_PATCH_RAW}" -o "${DTS_TMP}";then
+        pushd "${OPENWRT_PATH}" >/dev/null
+        if ! patch -p1 --no-backup-if-mismatch < "${DTS_TMP}";then
+            echo "WARN:DTS大分区补丁打补丁失败(hunk冲突)"
+        fi
+        popd >/dev/null
+    else
+        echo "WARN:DTS大分区补丁下载失败"
+    fi
+    echo "====== [Handles.sh] DTS大分区补丁完成 ======"
+fi
